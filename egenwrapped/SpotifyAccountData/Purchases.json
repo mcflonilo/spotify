@@ -1,0 +1,81 @@
+[
+  {
+    "id": "gid://shopify/Order/5784657887470",
+    "createdAt": "2024-05-15T06:41:55Z",
+    "updatedAt": "2024-05-25T01:41:13Z",
+    "customAttributes": [
+      {
+        "key": "artist_uri",
+        "value": "spotify:artist:4qrHkx5cgWIslciLXUMrYw"
+      },
+      {
+        "key": "medium",
+        "value": "app-nowplayingview"
+      },
+      {
+        "key": "source",
+        "value": "spotify"
+      },
+      {
+        "key": "spotify_sp_t",
+        "value": "d0df5c2dfb317174c24f2d458b4e01c6"
+      }
+    ],
+    "currencyCode": "USD",
+    "currentTotalPriceSet": {
+      "amount": "81.37",
+      "currencyCode": "USD"
+    },
+    "shopifyDomain": "pure-noise-merch.myshopify.com",
+    "customerLocale": "en",
+    "displayFulfillmentStatus": "FULFILLED",
+    "displayFinancialStatus": "PAID",
+    "lineItems": [
+      {
+        "id": "gid://shopify/LineItem/14310054133998",
+        "name": "You Won't Go Before You're Supposed To Black - Pullover - Large",
+        "title": "You Won't Go Before You're Supposed To Black - Pullover",
+        "originalTotalSet": {
+          "amount": "50.0",
+          "currencyCode": "USD"
+        },
+        "totalDiscountSet": {
+          "amount": "0.0",
+          "currencyCode": "USD"
+        },
+        "orderId": "gid://shopify/Order/5784657887470",
+        "shopifyDomain": "pure-noise-merch.myshopify.com",
+        "fulfillmentStatus": "fulfilled",
+        "sales": [
+          {
+            "id": "gid://shopify/Sale/18198648258798",
+            "actionType": "ORDER",
+            "lineType": "PRODUCT",
+            "quantity": 1,
+            "lineItem": {
+              "id": "gid://shopify/LineItem/14310054133998"
+            },
+            "totalAmount": {
+              "amount": "50.0",
+              "currencyCode": "USD"
+            },
+            "totalTaxAmount": {
+              "amount": "0.0",
+              "currencyCode": "USD"
+            },
+            "totalDiscountAmountBeforeTaxes": {
+              "amount": "0.0",
+              "currencyCode": "USD"
+            },
+            "totalDiscountAmountAfterTaxes": {
+              "amount": "0.0",
+              "currencyCode": "USD"
+            },
+            "taxes": [
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
