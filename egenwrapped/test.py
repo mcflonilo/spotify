@@ -1,10 +1,12 @@
 import json
 from datetime import datetime, timedelta
 from collections import Counter
-import matplotlib.pyplot as plt
+import copy
+import plotly.graph_objs as go
+import plotly.offline as pyo
 
 def load_json(filepath):
-    with open(filepath, 'r', encoding='utf-8') as file:
+    with open(filepath, 'r' encoding) as file:
         return json.load(file)
 
 def calculateTopTracks(week, amount):
@@ -31,28 +33,75 @@ def getweeks(data):
 
     return allweeks
 
+def find_all_artists(data):
+    artists = set()
+    for entry in data:
+        artists.add(entry['artistName'])
+    return artists
+
+def moving_average(data, window_size):
+    return [sum(data[i:i+window_size]) / window_size for i in range(len(data) - window_size + 1)]
+
 if __name__ == "__main__":
+    global data
+    week = list()
     data = load_json('spotify/egenwrapped/SpotifyAccountData/StreamingHistory_music_0.json')
     data.extend(load_json('spotify/egenwrapped/SpotifyAccountData/StreamingHistory_music_1.json'))
     data.extend(load_json('spotify/egenwrapped/SpotifyAccountData/StreamingHistory_music_2.json'))
 
-    weeks = getweeks(data)
+    weekByWeek = []
+    topArtists = Counter()
+    for entry in data:
+        topArtists[entry['artistName']] += entry['msPlayed']
+    topArtists = topArtists.most_common(10)
 
-    # Prepare data for visualization
-    song_totals = Counter()
-    for week in weeks:
-        for song, count in week:
-            song_totals[song] += count
+    for week in getweeks(data):
+        toptentimes = [0] * 10
+        topartistWeekData = [("", 0)] * 10
+        for element in week:
+            if element['artistName'] in dict(topArtists):
+                index = list(dict(topArtists).keys()).index(element['artistName'])
+                toptentimes[index] += element['msPlayed']
 
-    # Filter to top 20 songs over the year
-    top_songs = song_totals.most_common(20)
+        for i in range(10):
+            topartistWeekData[i] = (list(dict(topArtists).keys())[i], toptentimes[i])
+        weekByWeek.append(copy.deepcopy(topartistWeekData))
 
-    # Plot the data
-    songs, counts = zip(*top_songs)
-    plt.figure(figsize=(14, 7))
-    plt.barh(songs, counts)
-    plt.xlabel('Total Play Count')
-    plt.ylabel('Song')
-    plt.title('Top 20 Songs Over the Year')
-    plt.gca().invert_yaxis()  # Invert y-axis to have the highest count on top
-    plt.show()
+    # Prepare data for plotting
+    weeks_count = len(weekByWeek)
+    x = list(range(weeks_count))
+    artist_playtimes = {artist: [] for artist, _ in topArtists}
+
+    for week_data in weekByWeek:
+        total_playtime = sum(playtime for _, playtime in week_data)
+        for artist, playtime in week_data:
+            normalized_playtime = (playtime / total_playtime) if total_playtime > 0 else 0
+            artist_playtimes[artist].append(normalized_playtime)
+
+    # Apply moving average
+    window_size = 3  # Adjust the window size as needed
+    smoothed_artist_playtimes = {artist: moving_average(playtimes, window_size) for artist, playtimes in artist_playtimes.items()}
+
+    # Adjust x-axis for smoothed data
+    smoothed_x = list(range(len(x) - window_size + 1))
+
+    # Plotting with Plotly
+    traces = []
+    for artist, playtimes in smoothed_artist_playtimes.items():
+        trace = go.Scatter(
+            x=smoothed_x,
+            y=playtimes,
+            mode='lines',
+            name=artist
+        )
+        traces.append(trace)
+
+    layout = go.Layout(
+        title='Top 10 Artists Normalized Playtime Over Weeks (Smoothed)',
+        xaxis=dict(title='Week'),
+        yaxis=dict(title='Normalized Playtime'),
+        hovermode='closest'
+    )
+
+    fig = go.Figure(data=traces, layout=layout)
+    pyo.plot(fig, filename='top_artists_playtime.html')
