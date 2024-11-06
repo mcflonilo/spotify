@@ -38,7 +38,6 @@ def load_all_json_files(directory, regex_pattern):
             print(f"Loaded {filename}")
     return json_data
 
-
 def calculateWeek(endDate, data):
     week = []
     i = 0
@@ -58,9 +57,10 @@ def calculateRest():
 def calculateTotalTimeByArtist(data):
     artist_time = defaultdict(timedelta)
     for entry in data:
-        artist = entry[jsonformat['artistName']]
-        ms_played = entry.get(jsonformat['msplayed'], 0)
-        artist_time[artist] += timedelta(milliseconds=ms_played)
+        artist = entry.get(jsonformat['artistName'], None)
+        if artist:
+            ms_played = entry.get(jsonformat['msplayed'], 0)
+            artist_time[artist] += timedelta(milliseconds=ms_played)
     most_listened_artist = max(artist_time, key=artist_time.get)
     top_10_artists = sorted(artist_time.items(), key=lambda x: x[1], reverse=True)[:10]
     for artist, time in top_10_artists:
@@ -96,61 +96,39 @@ def moving_average(data, window_size):
     return [sum(data[i:i+window_size]) / window_size for i in range(len(data) - window_size + 1)]
 
 def plotTopArtistsPlaytime(data):
-    def checknameMatch(name):
-        for i in range(0,10):
-            if topten[i]==name:
-                return i
-        return -1
-    
-    topArtists = calculateTotalTimeByArtist(data)
+    top_artists = calculateTotalTimeByArtist(data)
     weeks = getweeks()
-    weekByWeek = []
-    topartistWeekData = []
-    topten = []
-    for element in topArtists:
-        topartistWeekData.append((element[0],0)) 
-        topten.append(element[0])
+    top_artists = [artist for artist, _ in top_artists]
+    print(top_artists)
 
+    weekbyweek = []
+    week_dates = []
+
+    cumulative_time = defaultdict(int)
     for week in weeks:
-        toptentimes = []
-        for i in range(10):
-            toptentimes.append(0)
-        for element in week:
-            index = checknameMatch(element[jsonformat['artistName']])
-            if(index>=0):
-                toptentimes[index] += element[jsonformat['msplayed']]
+        currentWeek = []
+        for artist in top_artists:
+            artist_time = sum(entry.get(jsonformat['msplayed'], 0) for entry in week if entry[jsonformat['artistName']] == artist)
+            cumulative_time[artist] += artist_time
+            currentWeek.append((artist, cumulative_time[artist]))
+        weekbyweek.append(currentWeek)
+        if week:
+            week_dates.append(datetime.strptime(week[-1][jsonformat['endtime']], jsonformat['timeformat']))
 
-        for i in range(10):
-            topartistWeekData[i] =(topten[i],toptentimes[i])
-        weekByWeek.append(copy.deepcopy(topartistWeekData))
+    for artist in top_artists:
+        artist_weekly_playtime = [dict(week)[artist] / 3600000 for week in weekbyweek]
+        plt.plot(week_dates, artist_weekly_playtime, label=artist)
 
-    # Prepare data for plotting
-    weeks_count = len(weekByWeek)
-    x = list(range(weeks_count))
-    artist_playtimes = {artist: [] for artist, _ in topArtists}
-
-    for week_data in weekByWeek:
-        for artist, playtime in week_data:
-            artist_playtimes[artist].append(playtime / 3600000)  # Convert ms to hours
-
-    # Apply moving average
-    window_size = 3  # Adjust the window size as needed
-    smoothed_artist_playtimes = {artist: moving_average(playtimes, window_size) for artist, playtimes in artist_playtimes.items()}
-
-    # Adjust x-axis for smoothed data
-    smoothed_x = list(range(len(x) - window_size + 1))
-
-    # Plotting
-    plt.figure(figsize=(12, 8))
-    for artist, playtimes in smoothed_artist_playtimes.items():
-        plt.plot(smoothed_x, playtimes, label=artist)
-
-    plt.xlabel('Week')
+    plt.xlabel('Date')
     plt.ylabel('Playtime (hours)')
-    plt.title('Top 10 Artists Playtime Over Weeks (Smoothed)')
+    plt.title('Top Artists Playtime Over Time')
     plt.legend()
     plt.grid(True)
     plt.show()
+    
+
+                
+
 
 def plotArtistPlaytimeOverTime(data):
     artist_time = defaultdict(list)
@@ -193,23 +171,21 @@ if __name__ == "__main__":
     if user_input == 'y':
         jsonformat = {'artistName':'master_metadata_album_artist_name','trackname':'master_metadata_track_name','msplayed':'ms_played','endtime':'ts','timeformat':'%Y-%m-%dT%H:%M:%SZ','fileName':'Streaming_History_Audio'}
         regex_pattern = r'(Streaming_History_Audio).+(\.json)'
-        data = load_all_json_files('spotify/egenwrapped/SpotifyAccountData/pi/extended', regex_pattern)
+        data = load_all_json_files('egenwrapped/SpotifyAccountData/lars/extended', regex_pattern)
     elif user_input == 'n':
         jsonformat = {'artistName':'artistName','trackname':' trackName','msplayed':'msPlayed','endtime':'endTime','timeformat':'%Y-%m-%d %H:%M','fileName':'StreamingHistory_music'}
         regex_pattern = r'(StreamingHistory_music_).+(\.json)'
-        data = load_all_json_files('spotify/egenwrapped/SpotifyAccountData/pi/last year', regex_pattern)
+        data = load_all_json_files('egenwrapped/SpotifyAccountData/pi/last year', regex_pattern)
     else:
         print("Invalid input. Please enter 'plot' or 'exit'.")
 
     week = list()
-    startdate = datetime.strptime(data[0][jsonformat['endtime']], jsonformat['timeformat'])
-    enddate = datetime.strptime(data[data.__len__()-1][jsonformat['endtime']], jsonformat['timeformat'])
     
     
     #allweeks = getweeks()
     #plotTopArtistsPlaytime(data)
-    #plotArtistPlaytimeOverTime(data)
-    print(calculateTopTracks(data,10))
+    plotTopArtistsPlaytime(data)
+    #print(calculateTopTracks(data,10))
     
         
     
